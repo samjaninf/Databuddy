@@ -1,19 +1,20 @@
 "use client";
 
-import { BookOpenIcon, BuildingsIcon, FloppyDiskIcon } from "@phosphor-icons/react";
+import { BuildingsIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { RightSidebar } from "@/components/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type Organization, useOrganizations } from "@/hooks/use-organizations";
 import { OrganizationLogoUploader } from "./organization-logo-uploader";
 
-interface GeneralSettingsProps {
+export function GeneralSettings({
+	organization,
+}: {
 	organization: Organization;
-}
-
-export function GeneralSettings({ organization }: GeneralSettingsProps) {
+}) {
 	const [name, setName] = useState(organization.name);
 	const [slug, setSlug] = useState(organization.slug);
 	const [isSaving, setIsSaving] = useState(false);
@@ -60,41 +61,65 @@ export function GeneralSettings({ organization }: GeneralSettingsProps) {
 	return (
 		<div className="h-full lg:grid lg:grid-cols-[1fr_18rem]">
 			{/* Main Content */}
-			<div className="flex flex-col border-b lg:border-b-0 lg:border-r">
-				<div className="flex-1 space-y-6 p-5">
+			<div className="flex flex-col border-b lg:border-b-0">
+				<div className="flex-1 overflow-y-auto">
 					{/* Logo Section */}
-					<OrganizationLogoUploader organization={organization} />
-
-					{/* Name & Slug */}
-					<div className="grid gap-4 sm:grid-cols-2">
-						<div className="space-y-2">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								id="name"
-								onChange={(e) => setName(e.target.value)}
-								placeholder="Organization name…"
-								value={name}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="slug">Slug</Label>
-							<Input
-								id="slug"
-								onChange={(e) => handleSlugChange(e.target.value)}
-								placeholder="organization-slug…"
-								value={slug}
-							/>
+					<section className="border-b px-5 py-6">
+						<div className="mb-4">
+							<h3 className="font-semibold text-sm">Organization Logo</h3>
 							<p className="text-muted-foreground text-xs">
-								Used in URLs: /{slug}
+								Upload a logo to represent your organization
 							</p>
 						</div>
-					</div>
+						<OrganizationLogoUploader organization={organization} />
+					</section>
+
+					{/* Organization Details */}
+					<section className="border-b px-5 py-6">
+						<div className="mb-4">
+							<h3 className="font-semibold text-sm">Organization Details</h3>
+							<p className="text-muted-foreground text-xs">
+								Manage your organization's basic information and identifier
+							</p>
+						</div>
+						<div className="grid gap-4 sm:grid-cols-2">
+							<div className="space-y-2">
+								<Label htmlFor="name">Organization Name</Label>
+								<Input
+									id="name"
+									onChange={(e) => setName(e.target.value)}
+									placeholder="e.g., Acme Corporation"
+									value={name}
+								/>
+								<p className="text-muted-foreground text-xs">
+									The display name for your organization
+								</p>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="slug">Organization Slug</Label>
+								<Input
+									id="slug"
+									onChange={(e) => handleSlugChange(e.target.value)}
+									placeholder="e.g., acme-corp"
+									value={slug}
+								/>
+								<p className="text-muted-foreground text-xs">
+									Used in URLs:{" "}
+									<code className="rounded bg-muted px-1 py-0.5 text-xs">
+										/{slug}
+									</code>
+								</p>
+							</div>
+						</div>
+					</section>
 				</div>
 
 				{/* Save Footer */}
 				{hasChanges && (
-					<div className="flex items-center justify-between border-t bg-muted/30 px-5 py-3">
-						<p className="text-muted-foreground text-sm">You have unsaved changes</p>
+					<div className="angled-rectangle-gradient flex shrink-0 items-center justify-between border-t bg-secondary px-5 py-4">
+						<p className="text-muted-foreground text-sm">
+							You have unsaved changes
+						</p>
 						<Button disabled={isSaving} onClick={handleSave} size="sm">
 							{isSaving ? (
 								<>
@@ -113,41 +138,15 @@ export function GeneralSettings({ organization }: GeneralSettingsProps) {
 			</div>
 
 			{/* Sidebar */}
-			<aside className="flex flex-col gap-4 bg-muted/30 p-5">
-				{/* Org Info Card */}
-				<div className="flex items-center gap-3 rounded border bg-background p-4">
-					<div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10">
-						<BuildingsIcon className="text-primary" size={20} weight="duotone" />
-					</div>
-					<div className="min-w-0">
-						<p className="truncate font-semibold">{organization.name}</p>
-						<p className="truncate text-muted-foreground text-sm">
-							/{organization.slug}
-						</p>
-					</div>
-				</div>
-
-				{/* Docs Link */}
-				<Button asChild className="w-full justify-start" variant="outline">
-					<a
-						href="https://www.databuddy.cc/docs/getting-started"
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						<BookOpenIcon className="mr-2" size={16} />
-						Documentation
-					</a>
-				</Button>
-
-				{/* Tip */}
-				<div className="mt-auto rounded border border-dashed bg-background/50 p-4">
-					<p className="mb-2 font-medium text-sm">Quick tip</p>
-					<p className="text-muted-foreground text-xs leading-relaxed">
-						The slug is used in URLs and API requests. Keep it short and
-						memorable.
-					</p>
-				</div>
-			</aside>
+			<RightSidebar className="gap-4 p-5">
+				<RightSidebar.InfoCard
+					description={`/${organization.slug}`}
+					icon={BuildingsIcon}
+					title={organization.name}
+				/>
+				<RightSidebar.DocsLink />
+				<RightSidebar.Tip description="The slug is used in URLs and API requests. Keep it short and memorable." />
+			</RightSidebar>
 		</div>
 	);
 }

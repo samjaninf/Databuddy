@@ -3,14 +3,14 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { useParams, usePathname } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 import NotFound from "@/app/not-found";
 import { useTrackingSetup } from "@/hooks/use-tracking-setup";
 import { useWebsite } from "@/hooks/use-websites";
 import { isAnalyticsRefreshingAtom } from "@/stores/jotai/filterAtoms";
 import { AnalyticsToolbar } from "./_components/analytics-toolbar";
-import { FiltersSection } from "./_components/filters-section";
+import { WebsiteTrackingSetupTab } from "./_components/tabs/tracking-setup-tab";
 
 type WebsiteLayoutProps = {
 	children: React.ReactNode;
@@ -20,45 +20,35 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
 	const { id } = useParams();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
+	const {
+		isLoading: isWebsiteLoading,
+		isError: isWebsiteError,
+		data: websiteData,
+	} = useWebsite(id as string);
 	const { isTrackingSetup, isTrackingSetupLoading } = useTrackingSetup(
-		id as string
+		websiteData?.id ?? ""
 	);
-	const { isLoading: isWebsiteLoading } = useWebsite(id as string);
 	const [isRefreshing, setIsRefreshing] = useAtom(isAnalyticsRefreshingAtom);
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const [toolbarHeight, setToolbarHeight] = useState(88);
 
-	const isAssistantPage =
-		pathname.includes("/assistant") ||
-		pathname.includes("/map") ||
-		pathname.includes("/flags") ||
-		pathname.includes("/databunny") ||
-		pathname.includes("/settings") ||
-		pathname.includes("/users");
+	const noToolbarPages = [
+		"/assistant",
+		"/map",
+		"/flags",
+		"/databunny",
+		"/settings",
+		"/users",
+	];
 
-	useLayoutEffect(() => {
-		const element = toolbarRef.current;
-		if (!element || isAssistantPage) {
-			setToolbarHeight(0);
-			return;
-		}
-
-		const updateHeight = () => {
-			const height = element.getBoundingClientRect().height;
-			setToolbarHeight(height);
-		};
-
-		updateHeight();
-
-		const resizeObserver = new ResizeObserver(updateHeight);
-		resizeObserver.observe(element);
-
-		return () => {
-			resizeObserver.disconnect();
-		};
-	}, [isAssistantPage]);
+	const isAssistantPage = noToolbarPages.some((page) =>
+		pathname.includes(page)
+	);
 
 	if (!id) {
+		return <NotFound />;
+	}
+
+	if (!isWebsiteLoading && isWebsiteError) {
 		return <NotFound />;
 	}
 
@@ -92,27 +82,34 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
 		<div className="flex h-full flex-col overflow-hidden">
 			{!isAssistantPage && (
 				<div
-					className="fixed top-12 right-0 left-0 z-50 shrink-0 space-y-0 bg-background md:top-0 md:left-76 lg:left-84"
+					className="sticky top-0 right-0 left-0 z-50 shrink-0 space-y-0 bg-background md:top-0 md:left-84"
 					ref={toolbarRef}
 				>
 					<AnalyticsToolbar
 						isDisabled={isToolbarDisabled}
 						isLoading={isToolbarLoading}
 						isRefreshing={isRefreshing}
-						onRefresh={handleRefresh}
+						onRefreshAction={handleRefresh}
 						websiteId={websiteId}
 					/>
-					{isTrackingSetup && <FiltersSection />}
 				</div>
 			)}
 
 			<div
-				className={`${isAssistantPage ? "min-h-0 flex-1" : "min-h-0 flex-1 overflow-y-auto"}`}
-				style={
-					isAssistantPage ? undefined : { paddingTop: `${toolbarHeight}px` }
-				}
+				className={`${isAssistantPage ? "min-h-0 flex-1" : "min-h-0 flex-1 overflow-y-auto overscroll-contain"}`}
 			>
-				{children}
+				{isAssistantPage ? (
+					children
+				) : websiteData &&
+					!isTrackingSetupLoading &&
+					isTrackingSetup !== null &&
+					isTrackingSetup === false ? (
+					<div className="p-4">
+						<WebsiteTrackingSetupTab websiteId={websiteId} />
+					</div>
+				) : (
+					children
+				)}
 			</div>
 		</div>
 	);

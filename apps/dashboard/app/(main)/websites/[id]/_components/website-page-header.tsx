@@ -1,5 +1,6 @@
 "use client";
 
+import type { IconProps } from "@phosphor-icons/react";
 import {
 	ArrowClockwiseIcon,
 	ArrowLeftIcon,
@@ -7,15 +8,16 @@ import {
 	PlusIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { cloneElement, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-interface WebsitePageHeaderProps {
+type WebsitePageHeaderProps = {
 	title: string;
 	description?: string;
-	icon: ReactNode;
+	icon: React.ReactElement<IconProps>;
 
 	websiteId: string;
 	websiteName?: string;
@@ -26,7 +28,7 @@ interface WebsitePageHeaderProps {
 	hasError?: boolean;
 	errorMessage?: string;
 
-	onRefresh?: () => void;
+	onRefreshAction?: () => void;
 	onCreateAction?: () => void;
 	createActionLabel?: string;
 
@@ -38,7 +40,7 @@ interface WebsitePageHeaderProps {
 	additionalActions?: ReactNode;
 
 	docsUrl?: string;
-}
+};
 
 export function WebsitePageHeader({
 	title,
@@ -49,7 +51,7 @@ export function WebsitePageHeader({
 	isRefreshing = false,
 	hasError = false,
 	errorMessage,
-	onRefresh,
+	onRefreshAction,
 	onCreateAction,
 	createActionLabel = "Create",
 	subtitle,
@@ -59,21 +61,29 @@ export function WebsitePageHeader({
 	docsUrl,
 }: WebsitePageHeaderProps) {
 	const renderSubtitle = () => {
-		if (isLoading) {
-			return <Skeleton className="h-4 w-48" />;
+		const showSubtitleSkeleton = isLoading && !description;
+
+		if (showSubtitleSkeleton) {
+			return (
+				<div className="h-5 sm:h-6">
+					<Skeleton className="h-4 w-48" />
+				</div>
+			);
 		}
 
 		if (subtitle) {
 			return typeof subtitle === "string" ? (
-				<p className="text-muted-foreground text-sm sm:text-base">{subtitle}</p>
+				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">
+					{subtitle}
+				</p>
 			) : (
-				subtitle
+				<div className="h-5 sm:h-6">{subtitle}</div>
 			);
 		}
 
 		if (description) {
 			return (
-				<p className="text-muted-foreground text-sm sm:text-base">
+				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">
 					{description}
 				</p>
 			);
@@ -84,7 +94,7 @@ export function WebsitePageHeader({
 
 	if (variant === "minimal") {
 		return (
-			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
+			<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-3">
 						{showBackButton && (
@@ -95,7 +105,7 @@ export function WebsitePageHeader({
 								</Link>
 							</Button>
 						)}
-						<div className="rounded-xl border border-primary/10 bg-primary/5 p-3">
+						<div className="rounded border border-primary/10 bg-primary/5 p-3">
 							{icon}
 						</div>
 					</div>
@@ -120,11 +130,11 @@ export function WebsitePageHeader({
 							</Link>
 						</Button>
 					)}
-					{onRefresh && (
+					{onRefreshAction && (
 						<Button
 							className="cursor-pointer gap-2 transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
 							disabled={isRefreshing}
-							onClick={onRefresh}
+							onClick={onRefreshAction}
 							variant="outline"
 						>
 							<ArrowClockwiseIcon
@@ -141,8 +151,8 @@ export function WebsitePageHeader({
 	}
 
 	return (
-		<div className="space-y-6">
-			<div className="border-b pb-6">
+		<div className="space-y-4">
+			<div className="border-b p-3 sm:p-4">
 				<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 					<div className="space-y-2">
 						<div className="flex items-center gap-3">
@@ -154,11 +164,20 @@ export function WebsitePageHeader({
 									</Link>
 								</Button>
 							)}
-							<div className="rounded-xl border border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10 p-3">
-								{icon}
+							<div className="rounded-lg border border-accent-foreground/10 bg-secondary p-2.5">
+								{cloneElement(icon, {
+									...icon.props,
+									className: cn(
+										"size-5 text-accent-foreground",
+										icon.props.className
+									),
+									"aria-hidden": "true",
+									size: 24,
+									weight: "fill",
+								})}
 							</div>
 							<div>
-								<h1 className="bg-linear-to-r from-foreground to-foreground/80 bg-clip-text font-bold text-2xl text-transparent tracking-tight sm:text-3xl">
+								<h1 className="truncate font-medium text-foreground text-xl tracking-tight sm:text-2xl">
 									{title}
 								</h1>
 								{renderSubtitle()}
@@ -179,12 +198,11 @@ export function WebsitePageHeader({
 								</Link>
 							</Button>
 						)}
-						{onRefresh && (
+						{onRefreshAction && (
 							<Button
-								className="cursor-pointer select-none gap-2 border-border/50"
 								disabled={isRefreshing}
-								onClick={onRefresh}
-								variant="outline"
+								onClick={onRefreshAction}
+								variant="secondary"
 							>
 								<ArrowClockwiseIcon
 									className={isRefreshing ? "animate-spin" : ""}
@@ -194,10 +212,7 @@ export function WebsitePageHeader({
 							</Button>
 						)}
 						{onCreateAction && (
-							<Button
-								className="group relative cursor-pointer select-none gap-2 overflow-hidden bg-linear-to-r from-primary to-primary/90 px-8 py-4 font-medium text-sm transition-all duration-300 hover:from-primary/90 hover:to-primary"
-								onClick={onCreateAction}
-							>
+							<Button onClick={onCreateAction}>
 								<PlusIcon size={16} />
 								{createActionLabel}
 							</Button>
@@ -208,7 +223,7 @@ export function WebsitePageHeader({
 			</div>
 
 			{hasError && (
-				<Card className="rounded-xl border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+				<Card className="rounded border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
 					<CardContent className="pt-6">
 						<div className="flex flex-col items-center space-y-3 text-center">
 							<div className="rounded-full border border-destructive/10 bg-destructive/5 p-3">
@@ -223,10 +238,10 @@ export function WebsitePageHeader({
 										`There was an issue loading your ${title.toLowerCase()}. Please try refreshing the page.`}
 								</p>
 							</div>
-							{onRefresh && (
+							{onRefreshAction && (
 								<Button
 									className="cursor-pointer select-none gap-2 rounded transition-all duration-300 hover:border-primary/20 hover:bg-primary/10"
-									onClick={onRefresh}
+									onClick={onRefreshAction}
 									size="sm"
 									variant="outline"
 								>
@@ -244,12 +259,12 @@ export function WebsitePageHeader({
 
 export function WebsitePageHeaderSkeleton() {
 	return (
-		<div className="space-y-6">
-			<div className="border-b bg-linear-to-r from-background via-background to-muted/20 pb-6">
+		<div className="space-y-4">
+			<div className="border-b pb-4">
 				<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 					<div className="space-y-2">
 						<div className="flex items-center gap-3">
-							<div className="h-12 w-12 animate-pulse rounded-xl bg-muted" />
+							<div className="h-12 w-12 animate-pulse rounded bg-muted" />
 							<div>
 								<div className="mb-2 h-8 w-48 animate-pulse rounded bg-muted" />
 								<div className="h-4 w-64 animate-pulse rounded bg-muted" />
@@ -257,8 +272,8 @@ export function WebsitePageHeaderSkeleton() {
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
-						<div className="h-10 w-32 animate-pulse rounded-lg bg-muted" />
-						<div className="h-10 w-36 animate-pulse rounded-lg bg-muted" />
+						<div className="h-10 w-32 animate-pulse rounded bg-muted" />
+						<div className="h-10 w-36 animate-pulse rounded bg-muted" />
 					</div>
 				</div>
 			</div>

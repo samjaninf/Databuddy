@@ -145,6 +145,7 @@ export const invitation = pgTable(
 		teamId: text("team_id"),
 		status: text().default("pending").notNull(),
 		expiresAt: timestamp("expires_at").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
 		inviterId: text("inviter_id").notNull(),
 	},
 	(table) => [
@@ -346,6 +347,7 @@ export const funnelDefinitions = pgTable(
 		description: text(),
 		steps: jsonb().notNull(),
 		filters: jsonb(),
+		ignoreHistoricData: boolean().default(false).notNull(),
 		isActive: boolean().default(true).notNull(),
 		createdBy: text().notNull(),
 		createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
@@ -384,6 +386,7 @@ export const goals = pgTable(
 		name: text().notNull(),
 		description: text(),
 		filters: jsonb(),
+		ignoreHistoricData: boolean().default(false).notNull(),
 		isActive: boolean().default(true).notNull(),
 		createdBy: text().notNull(),
 		createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
@@ -735,4 +738,3 @@ export const annotations = pgTable(
 			.onDelete("restrict"),
 	]
 );
-

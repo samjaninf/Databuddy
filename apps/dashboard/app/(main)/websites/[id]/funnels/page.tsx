@@ -2,84 +2,50 @@
 
 import { FunnelIcon, TrendDownIcon } from "@phosphor-icons/react";
 import { useAtom } from "jotai";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { lazy, Suspense, useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { useDateFilters } from "@/hooks/use-date-filters";
 import {
 	type CreateFunnelData,
-	type Funnel,
 	useAutocompleteData,
 	useFunnelAnalytics,
 	useFunnelAnalyticsByReferrer,
+	useFunnelPerformance,
 	useFunnels,
 } from "@/hooks/use-funnels";
 import { useTrackingSetup } from "@/hooks/use-tracking-setup";
 import { isAnalyticsRefreshingAtom } from "@/stores/jotai/filterAtoms";
+import type { FunnelAnalyticsData } from "@/types/funnels";
 import { WebsitePageHeader } from "../_components/website-page-header";
+import {
+	FunnelAnalytics,
+	FunnelAnalyticsByReferrer,
+	type FunnelItemData,
+	FunnelItemSkeleton,
+	FunnelsList,
+} from "./_components";
 
-// Removed PageHeader import - using shared WebsitePageHeader
-const FunnelsList = lazy(() =>
-	import("./_components/funnels-list").then((m) => ({
-		default: m.FunnelsList,
-	}))
-);
-const FunnelAnalytics = lazy(() =>
-	import("./_components/funnel-analytics").then((m) => ({
-		default: m.FunnelAnalytics,
-	}))
-);
-const FunnelAnalyticsByReferrer = lazy(
-	() => import("./_components/funnel-analytics-by-referrer")
-);
-const EditFunnelDialog = lazy(() =>
-	import("./_components/edit-funnel-dialog").then((m) => ({
-		default: m.EditFunnelDialog,
-	}))
-);
-const DeleteFunnelDialog = lazy(() =>
-	import("./_components/delete-funnel-dialog").then((m) => ({
-		default: m.DeleteFunnelDialog,
-	}))
+// Only dialogs are lazy loaded since they're conditionally rendered
+const EditFunnelDialog = dynamic(
+	() =>
+		import("./_components/edit-funnel-dialog").then((m) => ({
+			default: m.EditFunnelDialog,
+		})),
+	{ ssr: false }
 );
 
-const FunnelsListSkeleton = () => (
-	<div className="space-y-3">
-		{[...new Array(3)].map((_, i) => (
-			<Card
-				className="animate-pulse rounded-xl"
-				key={`funnel-skeleton-${i + 1}`}
-			>
-				<div className="p-6">
-					<div className="mb-4 flex items-start justify-between">
-						<div className="flex-1 space-y-3">
-							<div className="flex items-center gap-3">
-								<div className="h-6 w-48 rounded-lg bg-muted" />
-								<div className="h-4 w-4 rounded bg-muted" />
-							</div>
-							<div className="flex items-center gap-3">
-								<div className="h-5 w-16 rounded-full bg-muted" />
-								<div className="h-4 w-20 rounded bg-muted" />
-							</div>
-						</div>
-						<div className="h-8 w-8 rounded bg-muted" />
-					</div>
-					<div className="space-y-3">
-						<div className="h-4 w-2/3 rounded bg-muted" />
-						<div className="rounded-lg bg-muted/50 p-3">
-							<div className="mb-2 h-3 w-24 rounded bg-muted" />
-							<div className="flex gap-2">
-								<div className="h-8 w-32 rounded-lg bg-muted" />
-								<div className="h-4 w-4 rounded bg-muted" />
-								<div className="h-8 w-28 rounded-lg bg-muted" />
-							</div>
-						</div>
-					</div>
-				</div>
-			</Card>
-		))}
-	</div>
-);
+function FunnelsListSkeleton() {
+	return (
+		<div>
+			{[1, 2, 3].map((i) => (
+				<FunnelItemSkeleton key={i} />
+			))}
+		</div>
+	);
+}
 
 export default function FunnelsPage() {
 	const { id } = useParams();
@@ -88,14 +54,12 @@ export default function FunnelsPage() {
 	const [expandedFunnelId, setExpandedFunnelId] = useState<string | null>(null);
 	const [selectedReferrer, setSelectedReferrer] = useState("all");
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [editingFunnel, setEditingFunnel] = useState<Funnel | null>(null);
+	const [editingFunnel, setEditingFunnel] = useState<FunnelItemData | null>(
+		null
+	);
 	const [deletingFunnelId, setDeletingFunnelId] = useState<string | null>(null);
 
-	// Intersection observer for lazy loading
-	const pageRef = useRef<HTMLDivElement>(null);
-
 	const { refetchTrackingSetup } = useTrackingSetup(websiteId);
-
 	const { formattedDateRangeState, dateRange } = useDateFilters();
 
 	const {
@@ -110,12 +74,17 @@ export default function FunnelsPage() {
 		isUpdating,
 	} = useFunnels(websiteId);
 
+	// Preload analytics for all funnels
+	const { data: performanceData, isLoading: performanceLoading } =
+		useFunnelPerformance(websiteId, dateRange, !!funnels && funnels.length > 0);
+
+	// Detailed analytics for expanded funnel
 	const {
 		data: analyticsData,
 		isLoading: analyticsLoading,
 		error: analyticsError,
 		refetch: refetchAnalytics,
-	} = useFunnelAnalytics(websiteId, expandedFunnelId || "", dateRange, {
+	} = useFunnelAnalytics(websiteId, expandedFunnelId ?? "", dateRange, {
 		enabled: !!expandedFunnelId,
 	});
 
@@ -126,7 +95,7 @@ export default function FunnelsPage() {
 		refetch: refetchReferrerAnalytics,
 	} = useFunnelAnalyticsByReferrer(
 		websiteId,
-		expandedFunnelId || "",
+		expandedFunnelId ?? "",
 		{
 			start_date: formattedDateRangeState.startDate,
 			end_date: formattedDateRangeState.endDate,
@@ -135,6 +104,40 @@ export default function FunnelsPage() {
 	);
 
 	const autocompleteQuery = useAutocompleteData(websiteId);
+
+	// Analytics map from preloaded data
+	const analyticsMap = useMemo(() => {
+		const map = new Map<string, FunnelAnalyticsData | null>();
+
+		if (performanceData) {
+			for (const perf of performanceData) {
+				if (perf) {
+					map.set(perf.funnelId, perf as FunnelAnalyticsData);
+				}
+			}
+		}
+
+		// Override with detailed data for expanded funnel
+		if (expandedFunnelId && analyticsData) {
+			map.set(expandedFunnelId, analyticsData);
+		}
+
+		return map;
+	}, [performanceData, expandedFunnelId, analyticsData]);
+
+	// Loading states
+	const loadingAnalyticsIds = useMemo(() => {
+		const set = new Set<string>();
+		if (performanceLoading && funnels) {
+			for (const funnel of funnels) {
+				set.add(funnel.id);
+			}
+		}
+		if (expandedFunnelId && analyticsLoading) {
+			set.add(expandedFunnelId);
+		}
+		return set;
+	}, [performanceLoading, funnels, expandedFunnelId, analyticsLoading]);
 
 	const handleRefresh = useCallback(async () => {
 		setIsRefreshing(true);
@@ -173,15 +176,16 @@ export default function FunnelsPage() {
 		}
 	};
 
-	const handleUpdateFunnel = async (funnel: Funnel) => {
+	const handleUpdateFunnel = async (funnel: FunnelItemData) => {
 		try {
 			await updateFunnel({
 				funnelId: funnel.id,
 				updates: {
 					name: funnel.name,
-					description: funnel.description || "",
+					description: funnel.description ?? "",
 					steps: funnel.steps,
 					filters: funnel.filters,
+					ignoreHistoricData: funnel.ignoreHistoricData,
 				},
 			});
 			setIsDialogOpen(false);
@@ -214,20 +218,19 @@ export default function FunnelsPage() {
 
 	if (funnelsError) {
 		return (
-			<div className="p-6">
-				<Card className="rounded border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+			<div className="p-4">
+				<Card className="border-destructive/20 bg-destructive/5">
 					<CardContent className="pt-6">
 						<div className="flex items-center gap-2">
 							<TrendDownIcon
-								className="h-5 w-5 text-red-600"
-								size={16}
+								className="size-5 text-destructive"
 								weight="duotone"
 							/>
-							<p className="font-medium text-red-600">
+							<p className="font-medium text-destructive">
 								Error loading funnel data
 							</p>
 						</div>
-						<p className="mt-2 text-red-600/80 text-sm">
+						<p className="mt-2 text-destructive/80 text-sm">
 							{funnelsError.message}
 						</p>
 					</CardContent>
@@ -237,15 +240,14 @@ export default function FunnelsPage() {
 	}
 
 	return (
-		<div className="space-y-4 p-6" ref={pageRef}>
+		<div className="relative flex h-full flex-col">
 			<WebsitePageHeader
 				createActionLabel="Create Funnel"
 				description="Track user journeys and optimize conversion drop-off points"
 				hasError={!!funnelsError}
 				icon={
 					<FunnelIcon
-						className="h-6 w-6 text-primary"
-						size={16}
+						className="size-6 text-accent-foreground"
 						weight="duotone"
 					/>
 				}
@@ -255,7 +257,7 @@ export default function FunnelsPage() {
 					setEditingFunnel(null);
 					setIsDialogOpen(true);
 				}}
-				onRefresh={handleRefresh}
+				onRefreshAction={handleRefresh}
 				subtitle={
 					funnelsLoading
 						? undefined
@@ -265,11 +267,14 @@ export default function FunnelsPage() {
 				websiteId={websiteId}
 			/>
 
-			<Suspense fallback={<FunnelsListSkeleton />}>
+			{funnelsLoading ? (
+				<FunnelsListSkeleton />
+			) : (
 				<FunnelsList
+					analyticsMap={analyticsMap}
 					expandedFunnelId={expandedFunnelId}
-					funnels={(funnels as any) || []}
-					isLoading={funnelsLoading}
+					funnels={funnels ?? []}
+					loadingAnalyticsIds={loadingAnalyticsIds}
 					onCreateFunnel={() => {
 						setEditingFunnel(null);
 						setIsDialogOpen(true);
@@ -287,89 +292,63 @@ export default function FunnelsPage() {
 						}
 
 						return (
-							<Suspense
-								fallback={
-									<div className="flex items-center justify-center py-8">
-										<div className="relative">
-											<div className="h-6 w-6 rounded-full border-2 border-muted" />
-											<div className="absolute top-0 left-0 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-										</div>
-										<div className="ml-3 text-muted-foreground text-sm">
-											Loading analytics...
-										</div>
-									</div>
-								}
-							>
-								<div
-									className="space-y-4"
-									onClick={(e) => {
-										e.stopPropagation();
-									}}
-									onKeyDown={(e) => {
-										e.stopPropagation();
-									}}
-									role="tablist"
-								>
-									<FunnelAnalytics
-										data={analyticsData}
-										error={analyticsError as Error | null}
-										isLoading={analyticsLoading}
-										onRetry={refetchAnalytics}
-										referrerAnalytics={
-											referrerAnalyticsData?.referrer_analytics
-										}
-										selectedReferrer={selectedReferrer}
-									/>
+							<div className="space-y-4">
+								<FunnelAnalyticsByReferrer
+									data={referrerAnalyticsData}
+									error={referrerAnalyticsError}
+									isLoading={referrerAnalyticsLoading}
+									onReferrerChange={handleReferrerChange}
+								/>
 
-									<div className="border-border/50 border-t pt-4">
-										<FunnelAnalyticsByReferrer
-											data={referrerAnalyticsData}
-											dateRange={{
-												start_date: formattedDateRangeState.startDate,
-												end_date: formattedDateRangeState.endDate,
-											}}
-											error={referrerAnalyticsError}
-											funnelId={funnel.id}
-											isLoading={referrerAnalyticsLoading}
-											onReferrerChange={handleReferrerChange}
-											websiteId={websiteId}
-										/>
-									</div>
-								</div>
-							</Suspense>
+								<FunnelAnalytics
+									data={analyticsData}
+									error={analyticsError as Error | null}
+									isLoading={analyticsLoading}
+									onRetry={refetchAnalytics}
+									referrerAnalytics={referrerAnalyticsData?.referrer_analytics}
+									selectedReferrer={selectedReferrer}
+								/>
+							</div>
 						);
 					}}
 				</FunnelsList>
-			</Suspense>
+			)}
 
 			{isDialogOpen && (
-				<Suspense fallback={null}>
-					<EditFunnelDialog
-						autocompleteData={autocompleteQuery.data}
-						funnel={editingFunnel}
-						isCreating={isCreating}
-						isOpen={isDialogOpen}
-						isUpdating={isUpdating}
-						onClose={() => {
-							setIsDialogOpen(false);
-							setEditingFunnel(null);
-						}}
-						onCreate={handleCreateFunnel}
-						onSubmit={handleUpdateFunnel}
-					/>
-				</Suspense>
+				<EditFunnelDialog
+					autocompleteData={autocompleteQuery.data}
+					funnel={
+						editingFunnel
+							? {
+									...editingFunnel,
+									createdAt: String(editingFunnel.createdAt),
+									updatedAt: String(editingFunnel.updatedAt),
+								}
+							: null
+					}
+					isCreating={isCreating}
+					isOpen={isDialogOpen}
+					isUpdating={isUpdating}
+					onClose={() => {
+						setIsDialogOpen(false);
+						setEditingFunnel(null);
+					}}
+					onCreate={handleCreateFunnel}
+					onSubmit={handleUpdateFunnel}
+				/>
 			)}
 
 			{!!deletingFunnelId && (
-				<Suspense fallback={null}>
-					<DeleteFunnelDialog
-						isOpen={!!deletingFunnelId}
-						onClose={() => setDeletingFunnelId(null)}
-						onConfirm={() =>
-							deletingFunnelId && handleDeleteFunnel(deletingFunnelId)
-						}
-					/>
-				</Suspense>
+				<DeleteDialog
+					confirmLabel="Delete Funnel"
+					isOpen={!!deletingFunnelId}
+					itemName="this funnel"
+					onClose={() => setDeletingFunnelId(null)}
+					onConfirm={() =>
+						deletingFunnelId && handleDeleteFunnel(deletingFunnelId)
+					}
+					title="Delete Funnel"
+				/>
 			)}
 		</div>
 	);

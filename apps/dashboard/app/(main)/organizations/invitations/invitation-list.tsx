@@ -20,10 +20,10 @@ import type { CancelInvitation, Invitation } from "@/hooks/use-organizations";
 
 dayjs.extend(relativeTime);
 
-interface InvitationToCancel {
+type InvitationToCancel = {
 	id: string;
 	email: string;
-}
+};
 
 interface InvitationRowProps {
 	invitation: Invitation;
@@ -41,12 +41,23 @@ function InvitationRow({
 		dayjs(invitation.expiresAt).isAfter(dayjs());
 
 	const statusConfig = {
-		pending: { label: "Pending", className: "border-amber-500/20 bg-amber-500/10 text-amber-600" },
-		accepted: { label: "Accepted", className: "border-green-500/20 bg-green-500/10 text-green-600" },
-		expired: { label: "Expired", className: "border-muted bg-muted text-muted-foreground" },
+		pending: {
+			label: "Pending",
+			className: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+		},
+		accepted: {
+			label: "Accepted",
+			className: "border-green-500/20 bg-green-500/10 text-green-600",
+		},
+		expired: {
+			label: "Expired",
+			className: "border-muted bg-muted text-muted-foreground",
+		},
 	};
 
-	const status = statusConfig[invitation.status as keyof typeof statusConfig] ?? statusConfig.expired;
+	const status =
+		statusConfig[invitation.status as keyof typeof statusConfig] ??
+		statusConfig.expired;
 
 	return (
 		<div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 px-5 py-4">

@@ -24,9 +24,13 @@ import {
 } from "../shared/tracking-constants";
 import { generateNpmCode, generateScriptTag } from "../utils/code-generators";
 
-import type { TrackingOptions, WebsiteDataTabProps } from "../utils/types";
+import type { TrackingOptions } from "../utils/types";
 
-export function WebsiteTrackingSetupTab({ websiteId }: WebsiteDataTabProps) {
+type TrackingSetupTabProps = {
+	websiteId: string;
+};
+
+export function WebsiteTrackingSetupTab({ websiteId }: TrackingSetupTabProps) {
 	const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
 	const [trackingOptions] = useAtom(trackingOptionsAtom);
 
@@ -73,9 +77,8 @@ export function WebsiteTrackingSetupTab({ websiteId }: WebsiteDataTabProps) {
 		<div className="space-y-4">
 			{/* Tracking Status */}
 			<TrackingStatusCard
-				integrationType={trackingSetupData?.integration_type ?? undefined}
 				isSetup={trackingSetupData?.tracking_setup ?? false}
-				onRefresh={handleRefresh}
+				onRefreshAction={handleRefresh}
 			/>
 
 			{/* Installation Instructions */}

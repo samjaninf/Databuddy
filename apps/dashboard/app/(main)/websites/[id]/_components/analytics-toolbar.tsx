@@ -1,16 +1,19 @@
 "use client";
 
 import { ArrowClockwiseIcon } from "@phosphor-icons/react";
+import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtom } from "jotai";
 import { useCallback, useMemo } from "react";
 import type { DateRange as DayPickerRange } from "react-day-picker";
+import { useHotkeys } from "react-hotkeys-hook";
 import { LiveUserIndicator } from "@/components/analytics";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { Button } from "@/components/ui/button";
 import { useDateFilters } from "@/hooks/use-date-filters";
 import { addDynamicFilterAtom } from "@/stores/jotai/filterAtoms";
-import { AddFilterForm } from "./utils/add-filters";
+import { AddFilterForm } from "./filters/add-filters";
+import { FiltersSection } from "./filters/filters-section";
 
 const MAX_HOURLY_DAYS = 7;
 
@@ -43,7 +46,7 @@ type AnalyticsToolbarProps = {
 	isDisabled?: boolean;
 	isLoading?: boolean;
 	isRefreshing: boolean;
-	onRefresh: () => void;
+	onRefreshAction: () => void;
 	websiteId: string;
 };
 
@@ -51,7 +54,7 @@ export function AnalyticsToolbar({
 	isDisabled = false,
 	isLoading = false,
 	isRefreshing,
-	onRefresh,
+	onRefreshAction,
 	websiteId,
 }: AnalyticsToolbarProps) {
 	const {
@@ -92,13 +95,9 @@ export function AnalyticsToolbar({
 		const baseClass =
 			"h-full w-24 cursor-pointer touch-manipulation rounded-none px-0 text-sm";
 		const activeClass = isActive
-			? "bg-primary/10 font-medium text-primary"
+			? "font-medium bg-accent hover:bg-accent! text-accent-foreground"
 			: "text-muted-foreground";
-		const disabledClass =
-			type === "hourly" && isHourlyDisabled
-				? "cursor-not-allowed opacity-50"
-				: "";
-		return `${baseClass} ${activeClass} ${disabledClass}`.trim();
+		return `${baseClass} ${activeClass}`.trim();
 	};
 
 	const isQuickRangeActive = useCallback(
@@ -118,14 +117,28 @@ export function AnalyticsToolbar({
 		[selectedRange]
 	);
 
+	useHotkeys(
+		["1", "2", "3", "4", "5", "6"],
+		(e) => {
+			if (isDisabled) {
+				return;
+			}
+			const index = Number.parseInt(e.key, 10) - 1;
+			if (index >= 0 && index < QUICK_RANGES.length) {
+				e.preventDefault();
+				handleQuickRangeSelect(QUICK_RANGES[index]);
+			}
+		},
+		{ preventDefault: true, enabled: !isDisabled },
+		[isDisabled, handleQuickRangeSelect]
+	);
+
 	return (
-		<div
-			className={`flex h-22 flex-col border-b bg-background ${isDisabled ? "pointer-events-none opacity-50" : ""}`}
-		>
-			<div className="flex h-12 items-center justify-between border-border border-b pr-4">
+		<div className="flex h-fit flex-col bg-background">
+			<div className="flex h-12 items-center justify-between border-b pr-4">
 				<div className="flex h-full items-center">
 					<Button
-						className={getGranularityButtonClass("daily")}
+						className={clsx(getGranularityButtonClass("daily"), "border-r")}
 						disabled={isDisabled}
 						onClick={() => setCurrentGranularityAtomState("daily")}
 						title="View daily aggregated data"
@@ -133,9 +146,8 @@ export function AnalyticsToolbar({
 					>
 						Daily
 					</Button>
-					<div className="h-full w-px bg-border/50" />
 					<Button
-						className={getGranularityButtonClass("hourly")}
+						className={clsx(getGranularityButtonClass("hourly"), "border-r")}
 						disabled={isHourlyDisabled || isDisabled}
 						onClick={() => setCurrentGranularityAtomState("hourly")}
 						title={
@@ -159,10 +171,10 @@ export function AnalyticsToolbar({
 					{!isDisabled && <LiveUserIndicator websiteId={websiteId} />}
 					<Button
 						aria-label="Refresh data"
-						className="h-8 w-8"
+						className="size-8"
 						disabled={isRefreshing || isDisabled}
-						onClick={onRefresh}
-						variant="outline"
+						onClick={onRefreshAction}
+						variant="secondary"
 					>
 						<ArrowClockwiseIcon
 							aria-hidden="true"
@@ -172,14 +184,18 @@ export function AnalyticsToolbar({
 				</div>
 			</div>
 
-			<div className="flex h-10 items-center overflow-x-auto pr-4">
-				{QUICK_RANGES.map((range, index) => {
+			<div className="flex h-10 items-center overflow-x-auto overflow-y-hidden border-b pr-4">
+				{QUICK_RANGES.map((range) => {
 					const isActive = isQuickRangeActive(range);
 					return (
 						<div className="flex h-full items-center" key={range.label}>
-							{index > 0 && <div className="h-full w-px bg-border/50" />}
 							<Button
-								className={`h-full w-12 cursor-pointer touch-manipulation whitespace-nowrap rounded-none px-0 font-medium text-xs ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+								className={clsx(
+									"h-10 w-12 cursor-pointer touch-manipulation whitespace-nowrap rounded-none border-r px-0 font-medium text-xs",
+									isActive
+										? "bg-accent text-accent-foreground hover:bg-accent"
+										: "hover:bg-accent!"
+								)}
 								disabled={isDisabled}
 								onClick={() => handleQuickRangeSelect(range)}
 								title={range.fullLabel}
@@ -191,7 +207,7 @@ export function AnalyticsToolbar({
 					);
 				})}
 
-				<div className="border-border/50 border-l pl-2">
+				<div className="flex h-full items-center pl-1">
 					<DateRangePicker
 						className="w-auto"
 						disabled={isDisabled}
@@ -209,6 +225,8 @@ export function AnalyticsToolbar({
 					/>
 				</div>
 			</div>
+
+			{!isDisabled && <FiltersSection />}
 		</div>
 	);
 }

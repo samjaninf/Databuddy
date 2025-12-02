@@ -28,8 +28,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetDescription,
+	SheetFooter,
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
@@ -273,179 +275,169 @@ export function CreateOrganizationDialog({
 	return (
 		<>
 			<Sheet onOpenChange={handleClose} open={isOpen}>
-				<SheetContent
-					className="w-full max-w-md overflow-y-auto p-4 sm:max-w-lg sm:p-6 md:max-w-xl lg:max-w-2xl"
-					side="right"
-				>
-					<SheetHeader className="space-y-3 border-border/50 border-b pb-4 sm:pb-6">
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-							<div className="self-start rounded border border-primary/20 bg-primary/10 p-3 sm:self-center">
+				<SheetContent className="sm:max-w-lg" side="right">
+					<SheetHeader>
+						<div className="flex items-center gap-4">
+							<div className="flex h-11 w-11 items-center justify-center rounded border bg-secondary-brighter">
 								<BuildingsIcon
-									className="h-6 w-6 text-primary"
-									weight="duotone"
+									className="text-accent-foreground"
+									size={22}
+									weight="fill"
 								/>
 							</div>
-							<div className="min-w-0 flex-1">
-								<SheetTitle className="font-semibold text-foreground text-lg sm:text-xl">
+							<div>
+								<SheetTitle className="text-lg">
 									Create New Organization
 								</SheetTitle>
-								<SheetDescription className="mt-1 text-muted-foreground text-sm">
+								<SheetDescription>
 									Set up a new organization to collaborate with your team
 								</SheetDescription>
 							</div>
 						</div>
 					</SheetHeader>
 
-					<div className="space-y-4 pt-4 sm:space-y-6 sm:pt-6">
-						<div className="space-y-4">
-							<div className="space-y-2">
-								<Label
-									className="font-medium text-foreground text-sm"
-									htmlFor="org-name"
-								>
-									Organization Name *
-								</Label>
-								{(() => {
-									const isNameValid = formData.name.trim().length >= 2;
-									const hasUserTyped = formData.name.length > 0;
-									const shouldShowError =
-										(touchedFields.name || hasUserTyped) && !isNameValid;
-									return (
-										<>
-											<Input
-												aria-describedby="org-name-help"
-												aria-invalid={shouldShowError}
-												className={`rounded border-border/50 focus:border-primary/50 focus:ring-primary/20 ${
-													shouldShowError ? "border-destructive" : ""
-												}`}
-												id="org-name"
-												maxLength={100}
-												onBlur={() =>
-													setTouchedFields((prev) => ({ ...prev, name: true }))
-												}
-												onChange={(e) =>
-													setFormData((prev) => ({
-														...prev,
-														name: e.target.value,
-													}))
-												}
-												placeholder="e.g., Acme Corporation"
-												value={formData.name}
-											/>
-											<p
-												className="text-muted-foreground text-xs"
-												id="org-name-help"
-											>
-												This is the display name for your organization
-											</p>
-										</>
-									);
-								})()}
-							</div>
-
-							<div className="space-y-2">
-								<Label
-									className="font-medium text-foreground text-sm"
-									htmlFor="org-slug"
-								>
-									Organization Slug *
-								</Label>
-								{(() => {
-									const isSlugValid =
-										SLUG_ALLOWED_REGEX.test(formData.slug || "") &&
-										(formData.slug || "").trim().length >= 2;
-									const hasUserTyped = (formData.slug || "").length > 0;
-									const shouldShowError =
-										(touchedFields.slug || hasUserTyped) && !isSlugValid;
-									return (
-										<>
-											<Input
-												aria-describedby="org-slug-help"
-												aria-invalid={shouldShowError}
-												className={`rounded border-border/50 focus:border-primary/50 focus:ring-primary/20 ${
-													shouldShowError ? "border-destructive" : ""
-												}`}
-												id="org-slug"
-												maxLength={50}
-												onBlur={() =>
-													setTouchedFields((prev) => ({ ...prev, slug: true }))
-												}
-												onChange={(e) => handleSlugChange(e.target.value)}
-												placeholder="e.g., acme-corp"
-												value={formData.slug}
-											/>
-											<p
-												className="text-muted-foreground text-xs"
-												id="org-slug-help"
-											>
-												Used in URLs and must be unique. Only lowercase letters,
-												numbers, and hyphens allowed.
-											</p>
-										</>
-									);
-								})()}
-							</div>
-
-							<div className="space-y-2">
-								<Label className="font-medium text-foreground text-sm">
-									Organization Logo
-									<span className="font-normal text-muted-foreground">
-										{" "}
-										(optional)
-									</span>
-								</Label>
-								<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-									<div className="group relative self-start">
-										<Avatar className="h-16 w-16 border border-border/50">
-											<AvatarImage
-												alt={formData.name || "Organization"}
-												src={preview || undefined}
-											/>
-											<AvatarFallback className="bg-accent font-medium text-sm">
-												{getOrganizationInitials(formData.name || "O")}
-											</AvatarFallback>
-										</Avatar>
-										<button
-											aria-label="Upload organization logo"
-											className="absolute inset-0 flex cursor-pointer items-center justify-center rounded bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100"
-											onClick={() => fileInputRef.current?.click()}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault();
-													fileInputRef.current?.click();
-												}
-											}}
-											type="button"
-										>
-											<UploadSimpleIcon className="h-5 w-5 text-white" />
-											<span className="sr-only">Upload organization logo</span>
-										</button>
-									</div>
-									<div className="min-w-0 flex-1">
-										<p className="font-medium text-sm">Upload your logo</p>
-										<p className="text-muted-foreground text-xs">
-											Click the image to upload a new one.
-										</p>
+					<SheetBody className="space-y-6">
+						{/* Organization Name */}
+						<div className="space-y-2">
+							<Label className="font-medium" htmlFor="org-name">
+								Organization Name
+							</Label>
+							{(() => {
+								const isNameValid = formData.name.trim().length >= 2;
+								const hasUserTyped = formData.name.length > 0;
+								const shouldShowError =
+									(touchedFields.name || hasUserTyped) && !isNameValid;
+								return (
+									<>
 										<Input
-											accept="image/png, image/jpeg, image/gif"
-											className="hidden"
-											onChange={handleFileChange}
-											ref={fileInputRef}
-											type="file"
+											aria-describedby="org-name-help"
+											aria-invalid={shouldShowError}
+											id="org-name"
+											maxLength={100}
+											onBlur={() =>
+												setTouchedFields((prev) => ({ ...prev, name: true }))
+											}
+											onChange={(e) =>
+												setFormData((prev) => ({
+													...prev,
+													name: e.target.value,
+												}))
+											}
+											placeholder="e.g., Acme Corporation"
+											value={formData.name}
 										/>
-									</div>
+										<p
+											className="text-muted-foreground text-xs"
+											id="org-name-help"
+										>
+											This is the display name for your organization
+										</p>
+									</>
+								);
+							})()}
+						</div>
+
+						{/* Organization Slug */}
+						<div className="space-y-2">
+							<Label className="font-medium" htmlFor="org-slug">
+								Organization Slug
+							</Label>
+							{(() => {
+								const isSlugValid =
+									SLUG_ALLOWED_REGEX.test(formData.slug || "") &&
+									(formData.slug || "").trim().length >= 2;
+								const hasUserTyped = (formData.slug || "").length > 0;
+								const shouldShowError =
+									(touchedFields.slug || hasUserTyped) && !isSlugValid;
+								return (
+									<>
+										<Input
+											aria-describedby="org-slug-help"
+											aria-invalid={shouldShowError}
+											id="org-slug"
+											maxLength={50}
+											onBlur={() =>
+												setTouchedFields((prev) => ({ ...prev, slug: true }))
+											}
+											onChange={(e) => handleSlugChange(e.target.value)}
+											placeholder="e.g., acme-corp"
+											value={formData.slug}
+										/>
+										<p
+											className="text-muted-foreground text-xs"
+											id="org-slug-help"
+										>
+											Used in URLs and must be unique. Only lowercase letters,
+											numbers, and hyphens allowed.
+										</p>
+									</>
+								);
+							})()}
+						</div>
+
+						{/* Organization Logo */}
+						<div className="space-y-2">
+							<Label className="font-medium">
+								Organization Logo
+								<span className="font-normal text-muted-foreground">
+									{" "}
+									(optional)
+								</span>
+							</Label>
+							<div className="flex items-center gap-4">
+								<div className="group relative">
+									<Avatar className="size-12">
+										<AvatarImage
+											alt={formData.name || "Organization"}
+											src={preview || undefined}
+										/>
+										<AvatarFallback className="bg-accent font-medium">
+											{getOrganizationInitials(formData.name || "O")}
+										</AvatarFallback>
+									</Avatar>
+									<button
+										aria-label="Upload organization logo"
+										className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-accent-foreground opacity-0 transition-opacity group-hover:opacity-100"
+										onClick={() => fileInputRef.current?.click()}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												fileInputRef.current?.click();
+											}
+										}}
+										type="button"
+									>
+										<UploadSimpleIcon className="size-5 text-accent" />
+										<span className="sr-only">Upload organization logo</span>
+									</button>
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="font-medium text-sm">Upload your logo</p>
+									<p className="text-muted-foreground text-xs">
+										Click the image to upload a new one.
+									</p>
+									<Input
+										accept="image/png, image/jpeg, image/gif"
+										className="hidden"
+										onChange={handleFileChange}
+										ref={fileInputRef}
+										type="file"
+									/>
 								</div>
 							</div>
 						</div>
 
-						<div className="space-y-4">
+						{/* Getting Started */}
+						<div className="space-y-3">
 							<div className="flex items-center gap-2">
-								<UsersIcon className="h-5 w-5 text-primary" weight="duotone" />
-								<Label className="font-semibold text-base text-foreground">
-									Getting Started
-								</Label>
+								<UsersIcon
+									className="text-muted-foreground"
+									size={16}
+									weight="duotone"
+								/>
+								<Label className="font-medium">Getting Started</Label>
 							</div>
-							<div className="rounded border border-border/50 bg-muted/30 p-4">
+							<div className="rounded border bg-muted/20 p-4">
 								<p className="text-muted-foreground text-sm">
 									After creating your organization, you'll be able to:
 								</p>
@@ -456,36 +448,32 @@ export function CreateOrganizationDialog({
 								</ul>
 							</div>
 						</div>
+					</SheetBody>
 
-						<div className="flex flex-col justify-end gap-3 border-border/50 border-t pt-4 sm:flex-row sm:pt-6">
-							<Button
-								className="order-2 rounded sm:order-1"
-								disabled={isCreatingOrganization}
-								onClick={handleClose}
-								type="button"
-								variant="outline"
-							>
-								Cancel
-							</Button>
-							<Button
-								className="relative order-1 rounded sm:order-2"
-								disabled={!isFormValid || isCreatingOrganization}
-								onClick={handleSubmit}
-								type="button"
-							>
-								{isCreatingOrganization && (
-									<div className="absolute left-3">
-										<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-									</div>
-								)}
-								<span className={isCreatingOrganization ? "ml-6" : ""}>
-									{isCreatingOrganization
-										? "Creating..."
-										: "Create Organization"}
-								</span>
-							</Button>
-						</div>
-					</div>
+					<SheetFooter>
+						<Button
+							disabled={isCreatingOrganization}
+							onClick={handleClose}
+							type="button"
+							variant="ghost"
+						>
+							Cancel
+						</Button>
+						<Button
+							disabled={!isFormValid || isCreatingOrganization}
+							onClick={handleSubmit}
+							type="button"
+						>
+							{isCreatingOrganization ? (
+								"Creating..."
+							) : (
+								<>
+									<BuildingsIcon className="mr-2" size={16} />
+									Create Organization
+								</>
+							)}
+						</Button>
+					</SheetFooter>
 				</SheetContent>
 			</Sheet>
 

@@ -20,6 +20,7 @@ export function NavigationItem({
 	icon: Icon,
 	href,
 	alpha,
+	tag,
 	isActive,
 	isRootLevel,
 	isExternal,
@@ -78,7 +79,7 @@ export function NavigationItem({
 					size={20}
 				/>
 			) : (
-				<Icon aria-hidden="true" className="size-5 shrink-0" weight="duotone" />
+				<Icon aria-hidden="true" className="size-4 shrink-0" />
 			)}
 			<span className="flex-1">{name}</span>
 		</>
@@ -89,11 +90,16 @@ export function NavigationItem({
 			<div
 				aria-disabled="true"
 				className={cn(
-					"group flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
+					"group flex items-center gap-3 px-4 py-2.5 text-sm",
 					"cursor-not-allowed text-sidebar-foreground/30"
 				)}
 			>
 				{content}
+				{tag && (
+					<span className="font-mono text-sidebar-foreground/30 text-xs uppercase">
+						{tag}
+					</span>
+				)}
 			</div>
 		);
 	}
@@ -104,10 +110,10 @@ export function NavigationItem({
 			aria-current={isActive ? "page" : undefined}
 			aria-label={`${name}${isExternal ? " (opens in new tab)" : ""}`}
 			className={cn(
-				"group flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+				"group flex items-center gap-3 px-4 py-2.5 text-sm hover:text-sidebar-accent-foreground",
 				isActive
 					? "border-sidebar-ring border-r-2 bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-					: "text-sidebar-foreground/70"
+					: "text-sidebar-foreground/70 hover:bg-sidebar-accent"
 			)}
 			data-nav-href={href}
 			data-nav-item={name}
@@ -120,6 +126,11 @@ export function NavigationItem({
 				{alpha && (
 					<span className="font-mono text-sidebar-foreground/50 text-xs">
 						ALPHA
+					</span>
+				)}
+				{tag && (
+					<span className="font-mono text-sidebar-foreground/50 text-xs uppercase">
+						{tag}
 					</span>
 				)}
 				{badge && (

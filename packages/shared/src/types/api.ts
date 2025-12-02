@@ -21,15 +21,11 @@ export interface DynamicQueryFilter {
 	operator:
 		| "eq"
 		| "ne"
-		| "gt"
-		| "gte"
-		| "lt"
-		| "lte"
-		| "in"
-		| "not_in"
 		| "contains"
+		| "not_contains"
 		| "starts_with"
-		| "like";
+		| "in"
+		| "not_in";
 	value: string | number | (string | number)[];
 }
 

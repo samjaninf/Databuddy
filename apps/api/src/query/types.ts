@@ -10,20 +10,17 @@ import type {
 // Filter Operators
 // ============================================================================
 
+// Note: Both `contains` and `starts_with` use the LIKE operator.
+// The distinction is handled by value formatting: `contains` wraps values with %...%,
+// while `starts_with` appends % to the value (e.g., "value%").
 export const FilterOperators = {
 	eq: "=",
 	ne: "!=",
-	like: "LIKE",
-	ilike: "ILIKE",
-	notLike: "NOT LIKE",
-	gt: ">",
-	gte: ">=",
-	lt: "<",
-	lte: "<=",
+	contains: "LIKE",
+	not_contains: "NOT LIKE",
+	starts_with: "LIKE",
 	in: "IN",
-	notIn: "NOT IN",
-	isNull: "IS NULL",
-	isNotNull: "IS NOT NULL",
+	not_in: "NOT IN",
 } as const;
 
 export const TimeGranularity = {
@@ -228,7 +225,7 @@ export type SimpleQueryConfig = {
 
 	/** Query metadata for documentation */
 	meta?: QueryBuilderMeta;
-}
+};
 
 export type QueryRequest = {
 	projectId: string;
